@@ -10,7 +10,7 @@ public partial class BotUpdateHandler
         ArgumentNullException.ThrowIfNull(message);
 
         var user = message.From;
-        _logger.LogInformation($"{user.FirstName} was edited their:\"{message.Text}\" message");
+        _logger.LogInformation($"{user.FirstName} was edited their message");
     }
 }
 
