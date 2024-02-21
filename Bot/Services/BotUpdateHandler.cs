@@ -1,4 +1,7 @@
-﻿using Telegram.Bot;
+﻿using System.Globalization;
+using Bot.Resources;
+using Microsoft.Extensions.Localization;
+using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -8,10 +11,13 @@ namespace Bot.Services;
 public partial class BotUpdateHandler : IUpdateHandler
 {
     private readonly ILogger<BotUpdateHandler> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private IStringLocalizer _localizer;
 
-    public BotUpdateHandler(ILogger<BotUpdateHandler> logger)
+    public BotUpdateHandler(ILogger<BotUpdateHandler> logger, IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
     public Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -22,6 +28,13 @@ public partial class BotUpdateHandler : IUpdateHandler
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
+        using var scope=_scopeFactory.CreateScope();
+
+        var culture = new CultureInfo("uz-Uz");
+        CultureInfo.CurrentCulture=culture;
+        CultureInfo.CurrentUICulture=culture;
+
+        _localizer=scope.ServiceProvider.GetRequiredService<IStringLocalizer<BotLocalizer>>();
         var handler = update.Type switch
         {
             UpdateType.Message => HandlerMessageAsync(botClient, update.Message, cancellationToken),
