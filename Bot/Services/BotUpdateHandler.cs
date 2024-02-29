@@ -12,6 +12,7 @@ public partial class BotUpdateHandler : IUpdateHandler
 {
     private readonly ILogger<BotUpdateHandler> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private UserService _userService;
     private IStringLocalizer _localizer;
 
     public BotUpdateHandler(ILogger<BotUpdateHandler> logger, IServiceScopeFactory scopeFactory)
@@ -30,11 +31,14 @@ public partial class BotUpdateHandler : IUpdateHandler
     {
         using var scope=_scopeFactory.CreateScope();
 
-        var culture = new CultureInfo("uz-Uz");
-        CultureInfo.CurrentCulture=culture;
-        CultureInfo.CurrentUICulture=culture;
+        _userService = scope.ServiceProvider.GetRequiredService<UserService>();
+
+        var culture = await GetCultureForUser(update);
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
 
         _localizer=scope.ServiceProvider.GetRequiredService<IStringLocalizer<BotLocalizer>>();
+
         var handler = update.Type switch
         {
             UpdateType.Message => HandlerMessageAsync(botClient, update.Message, cancellationToken),
@@ -49,6 +53,23 @@ public partial class BotUpdateHandler : IUpdateHandler
         {
             await HandlePollingErrorAsync(botClient,e,cancellationToken);
         }
+    }
+
+    private async Task<CultureInfo> GetCultureForUser(Update update)
+    {
+        var from = update.Type switch
+        {
+            UpdateType.Message => update.Message.From,
+            UpdateType.EditedMessage => update.EditedMessage.From,
+            UpdateType.CallbackQuery => update.CallbackQuery.From,
+            UpdateType.InlineQuery => update.CallbackQuery.From,
+            _ => update.Message.From
+        };
+
+        var user = await _userService.GetUserAsync(from.Id);
+
+        return new CultureInfo(user.LanguageCode ?? "en-Us");
+
     }
 
     private Task UnknownUpdateHandler(ITelegramBotClient botClient, Message? message, CancellationToken cancellationToken)
