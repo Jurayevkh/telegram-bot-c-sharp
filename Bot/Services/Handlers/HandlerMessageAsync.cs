@@ -33,7 +33,7 @@ public partial class BotUpdateHandler
         await botClient.SendTextMessageAsync
             (
             chatId:user.Id,
-            text:_localizer["greeting"],
+            text:_localizer["start"],
             replyToMessageId:message.MessageId,
             cancellationToken:cancellationToken
             );
